@@ -52,8 +52,7 @@ def login():
         password = request.form['password']
         user = db.session.execute(text(f"SELECT * FROM user WHERE username='{username}' AND password='{password}'")).fetchone()
         if user:
-            token = jwt.encode({'username': user[1], 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
-            return jsonify({'token': token})
+            return jsonify(msg='Login Successful')
         return 'Login Failed', 401
     ...
 
@@ -65,8 +64,7 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username, password=password).first()
         if user:
-            token = jwt.encode({'username': user[1], 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
-            return jsonify({'token': token})
+            return jsonify(msg='Login Successful')
         return 'Login Failed', 401
     ...
 ```
@@ -153,6 +151,61 @@ The SonarQube scan was run again to verify that the issues were fixed.
 
 > Implement a JWT access and refresh token in your web application and document
 > the example of token usage.
+
+The JWT access and refresh tokens were implemented in the `/login` route.
+
+```python
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username, password=password).first()
+        if user:
+            access_token = create_access_token(identity=username)
+            refresh_token = create_refresh_token(identity=username)
+
+            response = jsonify(msg='Login Successful')
+            set_access_cookies(response, access_token)
+            set_refresh_cookies(response, refresh_token)
+            return response
+        return 'Login Failed', 401
+    ...
+```
+
+The access token is used to access the `/protected` route.
+
+```python
+@app.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
+```
+
+The refresh token is used to refresh the access token.
+
+```python
+@app.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return jsonify(access_token=access_token)
+```
+
+Using the following configuration, the JWT tokens can be sent in the headers,
+cookies, JSON, or query string.
+
+```python
+app.config["JWT_TOKEN_LOCATION"] = ["headers", "cookies", "json", "query_string"]
+```
+
+With the access token, the `/protected` route can be accessed:
+![](./docs/image6.png)
+
+Without the access token, the `/protected` route cannot be accessed:
+![](./docs/image7.png)
 
 ### Module 4 (15 points)
 

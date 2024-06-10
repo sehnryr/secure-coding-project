@@ -214,6 +214,14 @@ Without the access token, the `/protected` route cannot be accessed:
 > document the potential bugs and describe the current way how the application
 > protects it’s database from SQL injection attacks.
 
+Since the application is running on a local server, online tools cannot be used
+to scan the application. However, the SQL injection vulnerability has been
+analyzed using the OWASP ZAP tool in Module 1.
+
+To protect the database from SQL injection attacks, SQLAlchemy's ORM is used to
+interact with the database. This layer of abstraction ensures that the user
+input is sanitized and the queries are safe from SQL injection attacks.
+
 ### Module 5 (15 points)
 
 > Implement an example of serialization (if it does not exist in your

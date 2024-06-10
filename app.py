@@ -5,13 +5,18 @@ from datetime import datetime, timedelta, timezone
 import pickle
 from os import environ
 
+flask_secret_key = environ.get('FLASK_SECRET')
+
 db_user = environ.get('DB_USER')
 db_password = environ.get('DB_PASSWORD')
 db_host = environ.get('DB_HOST')
 db_name = environ.get('DB_NAME')
 
+admin_username = environ.get('ADMIN_USERNAME')
+admin_password = environ.get('ADMIN_PASSWORD')
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['SECRET_KEY'] = flask_secret_key
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -25,8 +30,8 @@ class User(db.Model):
 def init_db():
     with app.app_context():
         db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', password='admin')
+        if not User.query.filter_by(username=admin_username).first():
+            admin = User(username=admin_username, password=admin_password)
             db.session.add(admin)
             db.session.commit()
 

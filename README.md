@@ -79,6 +79,76 @@ def login():
 > significant bugs, document them, fix them and re-scan the application to prove
 > that the bugs are fixed.
 
+Since we've used SonarQube only in Maven projects during the labs, I've followed
+the instructions here: https://dev.to/mbaoma/sonarqube-as-code-health-checker-for-flask-project-3h94.
+
+Once the setup was done, the command `sonar-scanner` was run to scan the
+project.
+
+```bash
+sonar-scanner \
+    -Dsonar.projectKey=SonarQube---Project \
+    -Dsonar.sources=. \
+    -Dsonar.host.url=http://localhost:9000 \
+    -Dsonar.token=sqp_d8dc603256b62a9a97d2c025090baa62629002d9
+```
+
+The following issues were found:
+
+![](./docs/image3.png)
+![](./docs/image4.png)
+
+- Don't disclose "Flask" secret keys. (L14)
+- Revoke and change this password, as it is compromised. (L29)
+
+The two issues were fixed by removing the secret key from the code and changing
+the admin credentials using environment variables.
+
+```python
+# From
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+...
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            admin = User(username='admin', password='admin')
+            db.session.add(admin)
+            db.session.commit()
+
+# To
+flask_secret_key = environ.get('FLASK_SECRET')
+
+admin_username = environ.get('ADMIN_USERNAME')
+admin_password = environ.get('ADMIN_PASSWORD')
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = flask_secret_key
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+...
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username=admin_username).first():
+            admin = User(username=admin_username, password=admin_password)
+            db.session.add(admin)
+            db.session.commit()
+```
+
+The SonarQube scan was run again to verify that the issues were fixed.
+
+![](./docs/image5.png)
+
 ### Module 3 (15 points)
 
 > Implement a JWT access and refresh token in your web application and document

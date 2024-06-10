@@ -92,26 +92,43 @@ def hello():
     name = request.args.get('name', 'World')
     return render_template_string("<h1>Hello, {{ name }}!</h1>", name=name)
 
-# Vulnerable route for deserialization
-@app.route('/set_data', methods=['POST', 'GET'])
-def set_data():
-    if request.method == 'POST':
-        data = request.form['data']
-        deserialized_data = pickle.loads(data.encode('latin1'))
-        return jsonify({'data': deserialized_data})
-    return '''
-    <form method="post">
-        Data: <input type="text" name="data"><br>
-        <input type="submit" value="Set Data">
-    </form>
-    '''
-
 # Secure JWT-protected route
 @app.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
+
+class Foo:
+    attr1 = 1
+    attr2 = 'foo'
+    attr4 = [1, 2, 3]
+    attr5 = {'a': 1, 'b': 2, 'c': 3}
+    attr6 = None
+
+types_whitelist = [int, str, list, dict] # , type(None)
+
+# Route for deserializing data
+@app.route('/deserialization', methods=['GET'])
+def deserialization():
+    # Serialize data
+    serialized_data = pickle.dumps(Foo)
+
+    # Deserialize data
+    deserialized_data = pickle.loads(serialized_data)
+
+    # If an attribute is not in the whitelist, return an error
+    for k, v in deserialized_data.__dict__.items():
+        # Skip private attributes
+        if k.startswith('__'):
+            continue
+        if type(v) not in types_whitelist:
+            return jsonify(error=f"Invalid type: {type(v)}"), 500
+
+    return jsonify({
+        "className": deserialized_data.__name__,
+        "attributes": {k: v for k, v in deserialized_data.__dict__.items() if not k.startswith('__')}
+    }), 200
 
 if __name__ == '__main__':
     init_db()

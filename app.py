@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify, render_template_string
-from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity, set_access_cookies, set_refresh_cookies
+from flask import Flask, make_response, request, jsonify, render_template_string
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 import pickle
 from os import environ
+from werkzeug.security import generate_password_hash, check_password_hash
 
 flask_secret_key = environ.get('FLASK_SECRET')
 
@@ -31,13 +32,14 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
 
 def init_db():
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username=admin_username).first():
-            admin = User(username=admin_username, password=admin_password)
+            hashed_password = generate_password_hash(admin_password)
+            admin = User(username=admin_username, password=hashed_password)
             db.session.add(admin)
             db.session.commit()
 
@@ -48,6 +50,7 @@ def home():
     <h1>Welcome to the Vulnerable Flask App</h1>
     <ul>
         <li><a href="/login">Login</a></li>
+        <li><a href="/logout">Logout</a></li>
         <li><a href="/refresh">Refresh</a></li>
         <li><a href="/hello?name=World">Hello</a></li>
         <li><a href="/protected">Protected</a></li>
@@ -61,8 +64,8 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()
-        if user:
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
             access_token = create_access_token(identity=username)
             refresh_token = create_refresh_token(identity=username)
 
@@ -79,8 +82,15 @@ def login():
     </form>
     '''
 
+# Logout route to clear cookies
+@app.route('/logout', methods=['GET'])
+def logout():
+    response = make_response(jsonify(msg='Logout Successful'))
+    unset_jwt_cookies(response)
+    return response
+
 # Route to refresh access token
-@app.route("/refresh", methods=["POST"])
+@app.route("/refresh", methods=['POST', 'GET'])
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()

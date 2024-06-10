@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 import jwt
 from datetime import datetime, timedelta, timezone
 import pickle
@@ -43,7 +44,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()
+        user = db.session.execute(text(f"SELECT * FROM user WHERE username='{username}' AND password='{password}'")).fetchone()
         if user:
             token = jwt.encode({'username': user[1], 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
             return jsonify({'token': token})

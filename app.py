@@ -85,7 +85,9 @@ def login():
 def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
-    return jsonify(access_token=access_token)
+    response = make_response(jsonify(access_token=access_token))
+    set_access_cookies(response, access_token)
+    return response
 
 # Vulnerable route for XSS
 @app.route('/hello', methods=['GET'])

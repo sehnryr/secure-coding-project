@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, render_template_string
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
 import jwt
 from datetime import datetime, timedelta, timezone
 import pickle
@@ -44,7 +43,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = db.session.execute(text(f"SELECT * FROM user WHERE username='{username}' AND password='{password}'")).fetchone()
+        user = User.query.filter_by(username=username, password=password).first()
         if user:
             token = jwt.encode({'username': user[1], 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
             return jsonify({'token': token})
@@ -61,7 +60,7 @@ def login():
 @app.route('/hello', methods=['GET'])
 def hello():
     name = request.args.get('name', 'World')
-    return render_template_string("<h1>Hello, {}!</h1>".format(name))
+    return render_template_string("<h1>Hello, {{ name }}!</h1>", name=name)
 
 # Vulnerable route for deserialization
 @app.route('/set_data', methods=['POST', 'GET'])

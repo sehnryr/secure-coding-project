@@ -191,7 +191,9 @@ The refresh token is used to refresh the access token.
 def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity)
-    return jsonify(access_token=access_token)
+    response = make_response(jsonify(access_token=access_token))
+    set_access_cookies(response, access_token)
+    return response
 ```
 
 Using the following configuration, the JWT tokens can be sent in the headers,

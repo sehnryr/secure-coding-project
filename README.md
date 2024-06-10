@@ -1,6 +1,10 @@
 # Secure Coding Project
 
 ```bash
+git clone https://github.com/sehnryr/secure-coding-project.git
+
+cd secure-coding-project
+
 docker compose up --build
 ```
 

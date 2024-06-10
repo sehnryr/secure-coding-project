@@ -274,3 +274,50 @@ attribute is not in the whitelist, an error is returned.
 
 > Use the best practices in implementing authentication and authorization to
 > prevent unauthorized access to confidential data.
+
+The best practices in implementing authentication and authorization were used in
+the application. The user credentials are stored in the database and the
+passwords are hashed using the `werkzeug.security` module.
+
+```python
+from werkzeug.security import generate_password_hash, check_password_hash
+...
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username=admin_username).first():
+            hashed_password = generate_password_hash(admin_password)
+            admin = User(username=admin_username, password=hashed_password)
+            db.session.add(admin)
+            db.session.commit()
+...
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            access_token = create_access_token(identity=username)
+            refresh_token = create_refresh_token(identity=username)
+
+            response = jsonify(msg='Login Successful')
+            set_access_cookies(response, access_token)
+            set_refresh_cookies(response, refresh_token)
+            return response
+        return 'Login Failed', 401
+    ...
+```
+
+The `/protected` route is protected using the `jwt_required` decorator as shown
+in Module 3.
+
+Hashing the passwords and using JWT tokens for authentication and authorization
+are the best practices to prevent unauthorized access to confidential data.

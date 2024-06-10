@@ -48,9 +48,10 @@ def home():
     <h1>Welcome to the Vulnerable Flask App</h1>
     <ul>
         <li><a href="/login">Login</a></li>
+        <li><a href="/refresh">Refresh</a></li>
         <li><a href="/hello?name=World">Hello</a></li>
-        <li><a href="/set_data">Set Data</a></li>
         <li><a href="/protected">Protected</a></li>
+        <li><a href="/deserialization">Deserialization</a></li>
     </ul>
     '''
 

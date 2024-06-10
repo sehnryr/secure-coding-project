@@ -228,6 +228,46 @@ input is sanitized and the queries are safe from SQL injection attacks.
 > application) and implement the deserialization protection based on
 > whitelisting the classes that can be deserialized.
 
+For this fifth module, the `pickle` module was used to serialize and deserialize
+the `Foo` class.
+
+```python
+class Foo:
+    attr1 = 1
+    attr2 = 'foo'
+    attr4 = [1, 2, 3]
+    attr5 = {'a': 1, 'b': 2, 'c': 3}
+    attr6 = None
+
+types_whitelist = [int, str, list, dict] # , type(None)
+
+# Route for deserializing data
+@app.route('/deserialization', methods=['GET'])
+def deserialization():
+    # Serialize data
+    serialized_data = pickle.dumps(Foo)
+
+    # Deserialize data
+    deserialized_data = pickle.loads(serialized_data)
+
+    # If an attribute is not in the whitelist, return an error
+    for k, v in deserialized_data.__dict__.items():
+        # Skip private attributes
+        if k.startswith('__'):
+            continue
+        if type(v) not in types_whitelist:
+            return jsonify(error=f"Invalid type: {type(v)}"), 500
+
+    return jsonify({
+        "className": deserialized_data.__name__,
+        "attributes": {k: v for k, v in deserialized_data.__dict__.items() if not k.startswith('__')}
+    }), 200
+```
+
+The `Foo` class is serialized and deserialized using the `pickle` module. The
+deserialized data is checked against the whitelist of types. If the type of an
+attribute is not in the whitelist, an error is returned.
+
 ### Module 6 (13 points)
 
 > Use the best practices in implementing authentication and authorization to

@@ -56,7 +56,7 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username, password=password).first()
         if user:
-            token = jwt.encode({'username': user[1], 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
+            token = jwt.encode({'username': user.username, 'exp': datetime.now(timezone.utc) + timedelta(minutes=30)}, app.config['SECRET_KEY'])
             return jsonify({'token': token})
         return 'Login Failed', 401
     return '''

@@ -3,10 +3,16 @@ from flask_sqlalchemy import SQLAlchemy
 import jwt
 from datetime import datetime, timedelta, timezone
 import pickle
+from os import environ
+
+db_user = environ.get('DB_USER')
+db_password = environ.get('DB_PASSWORD')
+db_host = environ.get('DB_HOST')
+db_name = environ.get('DB_NAME')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://user:password@db/db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_name}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
